@@ -1,0 +1,64 @@
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
+package frc.robot;
+
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.Constants.OperatorConstants;
+import frc.robot.subsystems.swervedrive.SwerveSubsystem;
+import frc.robot.subsystems.swervedrive.VisionSubsystem;
+
+import java.io.File;
+
+public class RobotContainer {
+
+  // Subsystems
+  private final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"));
+  public final VisionSubsystem visionSubsystem = new VisionSubsystem(drivebase);
+
+  // Controllers
+  private final CommandXboxController driverController = new CommandXboxController(0);
+  // private final CommandXboxController auxiliaryController = new CommandXboxController(1);
+
+  public RobotContainer() 
+  {
+    // NamedCommands.registerCommand("ExampleCommand", new ExampleCommand(subsystem));
+
+    configureBindings();
+
+    Command driveFieldOrientedAnglularVelocity = drivebase.driveCommand(
+        () -> MathUtil.applyDeadband(driverController.getLeftY(), OperatorConstants.LEFT_Y_DEADBAND),
+        () -> MathUtil.applyDeadband(driverController.getLeftX(), OperatorConstants.LEFT_X_DEADBAND),
+        () -> driverController.getRightX() * 0.95);
+
+    // Command driveFieldOrientedAnglularVelocityAprilTagAlignment = drivebase.driveCommand(
+    //     () -> MathUtil.applyDeadband(driverController.getLeftY(), OperatorConstants.LEFT_Y_DEADBAND),
+    //     () -> MathUtil.applyDeadband(driverController.getLeftX(), OperatorConstants.LEFT_X_DEADBAND),
+    //     () -> driverController.getRightX() * 0.95,
+    //     () -> driverController.start().getAsBoolean(),
+    //     visionSubsystem.returnCamera()
+    // );  
+
+    drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocity);
+  }
+
+  private void configureBindings()
+  {
+    driverController.back().onTrue(Commands.runOnce(drivebase::zeroGyro));
+  }
+
+  public Command getAutonomousCommand()
+  {
+    return drivebase.getAutonomousCommand("New Auto");
+  }
+
+  public void setMotorBrake(boolean brake)
+  {
+    drivebase.setMotorBrake(brake);
+  }
+}
