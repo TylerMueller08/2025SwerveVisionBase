@@ -25,8 +25,7 @@ public class RobotContainer {
   private final CommandXboxController driverController = new CommandXboxController(0);
   // private final CommandXboxController auxiliaryController = new CommandXboxController(1);
 
-  public RobotContainer() 
-  {
+  public RobotContainer() {
     // NamedCommands.registerCommand("ExampleCommand", new ExampleCommand(subsystem));
 
     configureBindings();
@@ -42,23 +41,20 @@ public class RobotContainer {
     //     () -> driverController.getRightX() * 0.95,
     //     () -> driverController.start().getAsBoolean(),
     //     visionSubsystem.returnCamera()
-    // );  
+    // ); 
 
     drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocity);
   }
 
-  private void configureBindings()
-  {
+  private void configureBindings() {
     driverController.back().onTrue(Commands.runOnce(drivebase::zeroGyro));
   }
 
-  public Command getAutonomousCommand()
-  {
+  public Command getAutonomousCommand() {
     return drivebase.getAutonomousCommand("New Auto");
   }
 
-  public void setMotorBrake(boolean brake)
-  {
+  public void setMotorBrake(boolean brake) {
     drivebase.setMotorBrake(brake);
   }
 }
