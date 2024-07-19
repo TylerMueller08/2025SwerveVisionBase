@@ -1,49 +1,78 @@
 package frc.robot.subsystems;
 
-import org.photonvision.PhotonCamera;
+import java.util.Optional;
 
-import edu.wpi.first.math.geometry.Pose2d;
+import org.photonvision.EstimatedRobotPose;
+import org.photonvision.PhotonCamera;
+import org.photonvision.PhotonPoseEstimator;
+import org.photonvision.PhotonPoseEstimator.PoseStrategy;
+import org.photonvision.simulation.PhotonCameraSim;
+import org.photonvision.simulation.SimCameraProperties;
+import org.photonvision.simulation.VisionSystemSim;
+
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Robot;
 
 public class VisionSubsystem extends SubsystemBase {
 
-    private final SwerveSubsystem swerveSubsystem;
+    private SwerveSubsystem swerveSubsystem;
     
-    private final PhotonCamera apriltagCamera = new PhotonCamera("AprilTagDetectionCamera");
-    // private final PhotonCamera objectCamera = new PhotonCamera("ObjectDetectionCamera");
+    private final PhotonCamera apriltagCamera;
+    // private final PhotonCamera objectCamera;
+
+    private final AprilTagFieldLayout tagLayout;
+    private final Transform3d robotToCam;
+    private final PhotonPoseEstimator photonPoseEstimator;
+
+    private PhotonCameraSim cameraSim;
+    private VisionSystemSim visionSim;
 
     public VisionSubsystem(SwerveSubsystem swerveSubsystem) {
         this.swerveSubsystem = swerveSubsystem;
+
+        apriltagCamera = new PhotonCamera("AprilTagDetectionCamera");
+        // objectCamera = new PhotonCamera("ObjectDetectionCamera");
+
+        tagLayout = AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
+        robotToCam = new Transform3d(new Translation3d(0.5, 0.0, 0.5), new Rotation3d(0, 0, 0)); // Camera mounted facing forward, half a meter forward of center, half a meter up from center.
+
+        photonPoseEstimator = new PhotonPoseEstimator(tagLayout, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, apriltagCamera, robotToCam);
+        photonPoseEstimator.setMultiTagFallbackStrategy(PoseStrategy.LOWEST_AMBIGUITY);
+        
+        // Simulation
+        if (Robot.isSimulation()) {
+            visionSim = new VisionSystemSim("main");
+            visionSim.addAprilTags(tagLayout);
+
+            SimCameraProperties cameraProp = new SimCameraProperties();
+            cameraProp.setCalibration(640, 480, Rotation2d.fromDegrees(100));
+            cameraProp.setCalibError(0.25, 0.08);
+            cameraProp.setFPS(30);
+            cameraProp.setAvgLatencyMs(35);
+            cameraProp.setLatencyStdDevMs(5);
+
+            cameraSim = new PhotonCameraSim(apriltagCamera, cameraProp);
+            visionSim.addCamera(cameraSim, robotToCam);
+            cameraSim.enableDrawWireframe(true);
+        }
+    }
+
+    public void simulationPeriodic() {
+        visionSim.update(swerveSubsystem.getPose());
+        visionSim.getDebugField(); // localhost:1182
     }
 
     public void periodic() {
-        estimateLocalPose();
+        Optional<EstimatedRobotPose> estimatedPoseOpt = photonPoseEstimator.update();
 
-        // Returns the current pose (position and rotation) of the robot, as reported by odometry
-        // Results should be relative of the blue alliance driverstation wall
-        Pose2d robotPose = swerveSubsystem.getPose();
-
-        System.out.println("<--------------->");
-        System.out.println("Swerve X Position: " + robotPose.getX());
-        System.out.println("Swerve Y Position: " + robotPose.getY());
-        System.out.println("Swerve Rotation: " + robotPose.getRotation().getDegrees());
-        System.out.println("<--------------->");
-    }
-
-    private void estimateLocalPose() {
-        var result = apriltagCamera.getLatestResult();
-        if (result.getMultiTagResult().estimatedPose.isPresent) {
-            Transform3d fieldToCameraPose = result.getMultiTagResult().estimatedPose.best;
-
-            double xPosition = fieldToCameraPose.getX();
-            double yPosition = fieldToCameraPose.getY(); // Z component denotes depth, which is not needed.
-            Rotation2d rotation = new Rotation2d(fieldToCameraPose.getRotation().getZ()); // Z component denotes yaw.
-
-            swerveSubsystem.swerveDrive.addVisionMeasurement(new Pose2d(xPosition, yPosition, rotation), Timer.getFPGATimestamp());
-        }
+        estimatedPoseOpt.ifPresent(estimatedPose -> swerveSubsystem.addVisionMeasurement(estimatedPoseOpt.get().estimatedPose.toPose2d(), Timer.getFPGATimestamp()));
     }
     
     public PhotonCamera returnCamera() {
