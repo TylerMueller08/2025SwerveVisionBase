@@ -74,7 +74,7 @@ public class VisionSubsystem extends SubsystemBase {
     public void periodic() {
         Optional<EstimatedRobotPose> estimatedPoseOpt = photonPoseEstimator.update();
 
-        estimatedPoseOpt.ifPresent(estimatedPose -> swerveSubsystem.addVisionMeasurement(estimatedPoseOpt.get().estimatedPose.toPose2d(), Timer.getFPGATimestamp()));
+        estimatedPoseOpt.ifPresent(estimatedPose -> swerveSubsystem.addVisionReading(estimatedPoseOpt.get().estimatedPose.toPose2d(), Timer.getFPGATimestamp()));
     }
     
     public PhotonCamera returnCamera() {
