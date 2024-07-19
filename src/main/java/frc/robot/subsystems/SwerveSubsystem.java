@@ -319,9 +319,7 @@ public class SwerveSubsystem extends SubsystemBase
   public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX, BooleanSupplier doAim, PhotonCamera camera) {
     return run(
       () -> {
-        double xInput = Math.pow(translationX.getAsDouble(), 3);
-        double yInput = Math.pow(translationY.getAsDouble(), 3);
-        double rotationInput = Math.pow(angularRotationX.getAsDouble(), 3);
+        Translation2d scaledInputs = SwerveMath.cubeTranslation(new Translation2d(translationX.getAsDouble(), translationY.getAsDouble()));
 
         PhotonPipelineResult result = camera.getLatestResult();
         try (PIDController turnController = new PIDController(0.15, 0.003, 0.0)) {
@@ -329,21 +327,19 @@ public class SwerveSubsystem extends SubsystemBase
           if (doAim.getAsBoolean() && result.hasTargets() && (result.getBestTarget().getFiducialId() == 4 || result.getBestTarget().getFiducialId() == 7)) {
             drive(
               swerveDrive.swerveController.getRawTargetSpeeds(
-                xInput * swerveDrive.getMaximumVelocity(),
-                yInput * swerveDrive.getMaximumVelocity(),
+                scaledInputs.getX() * swerveDrive.getMaximumVelocity(),
+                scaledInputs.getY() * swerveDrive.getMaximumVelocity(),
                 -turnController.calculate(result.getBestTarget().getYaw(), 0)
               )
             );
           } else {
             // Drive Normally
-            swerveDrive.drive(
-              new Translation2d(
-                xInput * swerveDrive.getMaximumVelocity(),
-                yInput * swerveDrive.getMaximumVelocity()),
-              rotationInput * swerveDrive.getMaximumAngularVelocity(),
-              true,
-              false
-            );
+            swerveDrive.drive(SwerveMath.cubeTranslation(new Translation2d(
+                                  translationX.getAsDouble() * swerveDrive.getMaximumVelocity(),
+                                  translationY.getAsDouble() * swerveDrive.getMaximumVelocity())),
+                              Math.pow(angularRotationX.getAsDouble(), 3) * swerveDrive.getMaximumAngularVelocity(),
+                true,
+                   false);
           }
         }
       }
