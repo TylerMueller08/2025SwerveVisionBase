@@ -28,9 +28,10 @@ public class VisionSubsystem extends SubsystemBase {
     // private final PhotonCamera objectCamera;
 
     private final AprilTagFieldLayout tagLayout;
-    private final Transform3d robotToCam;
+    private final Transform3d robotToCamera;
     private final PhotonPoseEstimator photonPoseEstimator;
 
+    // Simulation
     private PhotonCameraSim cameraSim;
     private VisionSystemSim visionSim;
 
@@ -38,12 +39,12 @@ public class VisionSubsystem extends SubsystemBase {
         this.swerveSubsystem = swerveSubsystem;
 
         apriltagCamera = new PhotonCamera("AprilTagDetectionCamera");
-        // objectCamera = new PhotonCamera("ObjectDetectionCamera");
+        // objectCamera = new PhotonCamera("ObjectDeetectionCamera");
 
         tagLayout = AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
-        robotToCam = new Transform3d(new Translation3d(0.5, 0.0, 0.5), new Rotation3d(0, 0, 0)); // Camera mounted facing forward, half a meter forward of center, half a meter up from center.
+        robotToCamera = new Transform3d(new Translation3d(0.5, 0.0, 0.5), new Rotation3d(0, 0, 0)); // Camera mounted facing forward, half a meter forward of center, half a meter up from center.
 
-        photonPoseEstimator = new PhotonPoseEstimator(tagLayout, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, apriltagCamera, robotToCam);
+        photonPoseEstimator = new PhotonPoseEstimator(tagLayout, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, apriltagCamera, robotToCamera);
         photonPoseEstimator.setMultiTagFallbackStrategy(PoseStrategy.LOWEST_AMBIGUITY);
         
         // Simulation
@@ -59,7 +60,7 @@ public class VisionSubsystem extends SubsystemBase {
             cameraProp.setLatencyStdDevMs(5);
 
             cameraSim = new PhotonCameraSim(apriltagCamera, cameraProp);
-            visionSim.addCamera(cameraSim, robotToCam);
+            visionSim.addCamera(cameraSim, robotToCamera);
             cameraSim.enableDrawWireframe(true);
         }
     }
@@ -69,6 +70,7 @@ public class VisionSubsystem extends SubsystemBase {
         visionSim.getDebugField(); // localhost:1182
     }
 
+    @Override
     public void periodic() {
         Optional<EstimatedRobotPose> estimatedPoseOpt = photonPoseEstimator.update();
 
