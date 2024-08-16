@@ -24,6 +24,7 @@ import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
@@ -43,6 +44,7 @@ import swervelib.telemetry.SwerveDriveTelemetry;
 import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
 
 public class SwerveSubsystem extends SubsystemBase {
+
   // Swerve drive object.
   private final SwerveDrive swerveDrive;
 
@@ -54,9 +56,9 @@ public class SwerveSubsystem extends SubsystemBase {
     double angleConversionFactor = SwerveMath.calculateDegreesPerSteeringRotation(18.75);
     double driveConversionFactor = SwerveMath.calculateMetersPerRotation(Units.inchesToMeters(4), 5.36);
 
-    System.out.println("\"conversionFactor\": {");
-    System.out.println("\t\"angle\": " + angleConversionFactor + ",");
-    System.out.println("\t\"drive\": " + driveConversionFactor);
+    System.out.println("\"conversionFactors\": {");
+    System.out.println("\t\"angle\": {\"factor\": " + angleConversionFactor + " },") ;
+    System.out.println("\t\"drive\": {\"factor\": " + driveConversionFactor + " }");
     System.out.println("}");
 
     // Configure the Telemetry before creating the SwerveDrive to avoid unnecessary objects being created.
@@ -69,8 +71,10 @@ public class SwerveSubsystem extends SubsystemBase {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+
     swerveDrive.setHeadingCorrection(false); // Heading correction should only be used while controlling the robot via angle.
     swerveDrive.setCosineCompensator(false); // Disables cosine compensation for simulations since it causes discrepancies not seen in real life.
+
     setupPathPlanner();
   }
 
@@ -196,9 +200,9 @@ public class SwerveSubsystem extends SubsystemBase {
   public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX) {
     return run(() -> {
       // Make the robot move
-      swerveDrive.drive(SwerveMath.cubeTranslation(new Translation2d(
+      swerveDrive.drive(SwerveMath.scaleTranslation(new Translation2d(
                             translationX.getAsDouble() * swerveDrive.getMaximumVelocity(),
-                            translationY.getAsDouble() * swerveDrive.getMaximumVelocity())),
+                            translationY.getAsDouble() * swerveDrive.getMaximumVelocity()), 0.8),
                         Math.pow(angularRotationX.getAsDouble(), 3) * swerveDrive.getMaximumAngularVelocity(),
                         true,
                         false);
@@ -233,9 +237,9 @@ public class SwerveSubsystem extends SubsystemBase {
             );
           } else {
             // Drive Normally
-            swerveDrive.drive(SwerveMath.cubeTranslation(new Translation2d(
+            swerveDrive.drive(SwerveMath.scaleTranslation(new Translation2d(
                                   translationX.getAsDouble() * swerveDrive.getMaximumVelocity(),
-                                  translationY.getAsDouble() * swerveDrive.getMaximumVelocity())),
+                                  translationY.getAsDouble() * swerveDrive.getMaximumVelocity()), 0.8),
                               Math.pow(angularRotationX.getAsDouble(), 3) * swerveDrive.getMaximumAngularVelocity(),
                 true,
                    false);
@@ -440,7 +444,7 @@ public class SwerveSubsystem extends SubsystemBase {
    * @param robotPose The robot pose reported by vision calculations
    * @param timestamp Timestamp the measurement was taken as time since startup, should be taken from Timer.getFPGATimestamp() or similar sources.
    */
-  public void addVisionReading(Pose2d robotPose, double timestamp) {
-    swerveDrive.addVisionMeasurement(robotPose, timestamp);
+  public void addVisionReading(Pose2d robotPose) {
+    swerveDrive.addVisionMeasurement(robotPose, Timer.getFPGATimestamp());
   }
 }
