@@ -65,7 +65,7 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     public void simulationPeriodic() {
-        visionSim.update(swerveSubsystem.getPose());
+        // visionSim.update(swerveSubsystem.getPose());
         visionSim.getDebugField(); // localhost:1182
     }
 

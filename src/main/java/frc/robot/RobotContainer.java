@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.ExampleCommand;
+import frc.robot.commands.auton.ExampleAuton;
 import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
@@ -21,7 +22,7 @@ import java.io.File;
 public class RobotContainer {
 
   // Subsystems
-  private final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"));
+  public final static SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"));
   private final ExampleSubsystem exampleSubsystem = new ExampleSubsystem();
   public final VisionSubsystem visionSubsystem = new VisionSubsystem(drivebase);
 
@@ -62,7 +63,8 @@ public class RobotContainer {
   }
 
   public Command getAutonomousCommand() {
-    return drivebase.getAutonomousCommand("New Auto");
+    // return drivebase.getAutonomousCommand("New Auto");
+    return new ExampleAuton();
   }
 
   public void setMotorBrake(boolean brake) {
