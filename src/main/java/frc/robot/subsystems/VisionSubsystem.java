@@ -6,13 +6,10 @@ import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonPoseEstimator.PoseStrategy;
-import org.photonvision.simulation.PhotonCameraSim;
-import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.simulation.VisionSystemSim;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -31,13 +28,12 @@ public class VisionSubsystem extends SubsystemBase {
     private final PhotonPoseEstimator photonPoseEstimator;
 
     // Simulation
-    private PhotonCameraSim cameraSim;
     private VisionSystemSim visionSim;
 
     public VisionSubsystem(SwerveSubsystem swerveSubsystem) {
         this.swerveSubsystem = swerveSubsystem;
 
-        apriltagCamera = new PhotonCamera("AprilTagDetectionCamera");
+        apriltagCamera = new PhotonCamera("DroidCam_Video");
         // objectCamera = new PhotonCamera("ObjectDeetectionCamera");
 
         tagLayout = AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
@@ -50,22 +46,11 @@ public class VisionSubsystem extends SubsystemBase {
         if (Robot.isSimulation()) {
             visionSim = new VisionSystemSim("main");
             visionSim.addAprilTags(tagLayout);
-
-            SimCameraProperties cameraProp = new SimCameraProperties();
-            cameraProp.setCalibration(640, 480, Rotation2d.fromDegrees(100));
-            cameraProp.setCalibError(0.25, 0.08);
-            cameraProp.setFPS(30);
-            cameraProp.setAvgLatencyMs(35);
-            cameraProp.setLatencyStdDevMs(5);
-
-            cameraSim = new PhotonCameraSim(apriltagCamera, cameraProp);
-            visionSim.addCamera(cameraSim, robotToCamera);
-            cameraSim.enableDrawWireframe(true);
         }
     }
 
     public void simulationPeriodic() {
-        // visionSim.update(swerveSubsystem.getPose());
+        visionSim.update(swerveSubsystem.getPose());
         visionSim.getDebugField(); // localhost:1182
     }
 
