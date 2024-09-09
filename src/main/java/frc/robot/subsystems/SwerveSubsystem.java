@@ -22,7 +22,6 @@ import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
@@ -45,6 +44,9 @@ public class SwerveSubsystem extends SubsystemBase {
 
   // Swerve drive object.
   private final SwerveDrive swerveDrive;
+
+  // PhotonVision class to keep an accurate odometry
+  private VisionSubsystem vision;
 
   // AprilTag field layout.
   private final AprilTagFieldLayout aprilTagFieldLayout = AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
@@ -73,12 +75,34 @@ public class SwerveSubsystem extends SubsystemBase {
     swerveDrive.setHeadingCorrection(false); // Heading correction should only be used while controlling the robot via angle.
     swerveDrive.setCosineCompensator(false); // Disables cosine compensation for simulations since it causes discrepancies not seen in real life.
 
+    setupPhotonVision();
     setupPathPlanner();
   }
 
   // Construct the swerve drive.
   public SwerveSubsystem(SwerveDriveConfiguration driveCfg, SwerveControllerConfiguration controllerCfg) {
     swerveDrive = new SwerveDrive(driveCfg, controllerCfg, Constants.MAX_SPEED);
+  }
+
+  // Setup the PhotonVision class.
+  public void setupPhotonVision() {
+    vision = new VisionSubsystem(swerveDrive::getPose, swerveDrive.field);
+    vision.updatePoseEstimation(swerveDrive);
+  }
+
+  // Update the pose estimation with vision data.
+  public void updatePoseWithVision() {
+    vision.updatePoseEstimation(swerveDrive);
+  }
+
+  /**
+   * Get the pose while updating with vision readings.
+   * 
+   * @return The robots pose with the vision estimates in place.
+   */
+  public Pose2d getVisionPose() {
+    vision.updatePoseEstimation(swerveDrive);
+    return swerveDrive.getPose();
   }
 
   // Setup AutoBuilder for PathPlanner.
@@ -156,9 +180,28 @@ public class SwerveSubsystem extends SubsystemBase {
           drive(ChassisSpeeds.fromFieldRelativeSpeeds(0, 0, turnRate, getHeading()));
           System.out.println("Heading: " + Math.abs(getSpeakerYaw().minus(getHeading()).getDegrees()));
         })
-        // .until(() -> Math.abs(getSpeakerYaw().minus(getHeading()).getDegrees()) < tolerance);
         .withTimeout(0.25);
   }
+
+  // /**
+  //  * Aim the robot at the speaker.
+  //  *
+  //  * @param tolerance Tolerance in degrees.
+  //  * @return Command to turn the robot to the speaker.
+  //  */
+  // public Command aimAtSpeaker(double tolerance)
+  // {
+  //   SwerveController controller = swerveDrive.getSwerveController();
+  //   return run(
+  //       () -> {
+  //         drive(ChassisSpeeds.fromFieldRelativeSpeeds(0,
+  //                                                     0,
+  //                                                     controller.headingCalculate(getHeading().getRadians(),
+  //                                                                                 getSpeakerYaw().getRadians()),
+  //                                                     getHeading())
+  //              );
+  //       }).until(() -> getSpeakerYaw().minus(getHeading()).getDegrees() < tolerance);
+  // }
 
   /**
    * Use PathPlanner Path finding to go to a point on the field.
@@ -191,6 +234,8 @@ public class SwerveSubsystem extends SubsystemBase {
    */
   public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX) {
     return run(() -> {
+      vision.updatePoseEstimation(swerveDrive);
+
       // Make the robot move
       swerveDrive.drive(SwerveMath.scaleTranslation(new Translation2d(
                             translationX.getAsDouble() * swerveDrive.getMaximumVelocity(),
@@ -239,6 +284,29 @@ public class SwerveSubsystem extends SubsystemBase {
         }
       }
     );
+  }
+
+  /**
+   * Command to drive the robot using translative values and heading as a setpoint.
+   *
+   * @param translationX Translation in the X direction.
+   * @param translationY Translation in the Y direction.
+   * @param rotation     Rotation as a value between [-1, 1] converted to radians.
+   * @return Drive command.
+   */
+  public Command simDriveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier rotation)
+  {
+    // swerveDrive.setHeadingCorrection(true); // Normally you would want heading correction for this kind of control.
+    return run(() -> {
+      vision.updatePoseEstimation(swerveDrive);
+      
+      // Make the robot move
+      driveFieldOriented(swerveDrive.swerveController.getTargetSpeeds(translationX.getAsDouble(),
+                                                                      translationY.getAsDouble(),
+                                                                      rotation.getAsDouble() * Math.PI,
+                                                                      swerveDrive.getOdometryHeading().getRadians(),
+                                                                      swerveDrive.getMaximumVelocity()));
+    });
   }
 
   /**
@@ -429,14 +497,5 @@ public class SwerveSubsystem extends SubsystemBase {
    */
   public Rotation2d getPitch() {
     return swerveDrive.getPitch();
-  }
-
-  /**
-   * Add a vision reading for swerve odometry
-   * @param robotPose The robot pose reported by vision calculations
-   * @param timestamp Timestamp the measurement was taken as time since startup, should be taken from Timer.getFPGATimestamp() or similar sources.
-   */
-  public void addVisionReading(Pose2d robotPose) {
-    swerveDrive.addVisionMeasurement(robotPose, Timer.getFPGATimestamp());
   }
 }

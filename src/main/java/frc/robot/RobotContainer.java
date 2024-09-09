@@ -15,7 +15,6 @@ import frc.robot.commands.ExampleCommand;
 import frc.robot.commands.auton.ExampleAuton;
 import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
-import frc.robot.subsystems.VisionSubsystem;
 
 import java.io.File;
 
@@ -24,7 +23,6 @@ public class RobotContainer {
   // Subsystems
   public final static SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"));
   private final ExampleSubsystem exampleSubsystem = new ExampleSubsystem();
-  public final VisionSubsystem visionSubsystem = new VisionSubsystem(drivebase);
 
   // Controllers
   private final CommandXboxController driverController = new CommandXboxController(0);
