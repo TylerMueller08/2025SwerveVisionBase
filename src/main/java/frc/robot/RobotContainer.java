@@ -9,59 +9,68 @@ import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
-import frc.robot.commands.ExampleCommand;
 import frc.robot.commands.auton.ExampleAuton;
-import frc.robot.subsystems.ExampleSubsystem;
+import frc.robot.commands.drivebase.AbsoluteDriveAdv;
 import frc.robot.subsystems.SwerveSubsystem;
 
 import java.io.File;
 
 public class RobotContainer {
 
+  // Controller(s)
+  private final CommandXboxController driverController = new CommandXboxController(0);
+
   // Subsystems
   public final static SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"));
-  private final ExampleSubsystem exampleSubsystem = new ExampleSubsystem();
 
-  // Controllers
-  private final CommandXboxController driverController = new CommandXboxController(0);
-  // private final CommandXboxController auxiliaryController = new CommandXboxController(1);
+  // Applies deadbands and inverts controls because joysticks
+  // are back-right positive while robot
+  // controls are front-left positive
+  // left stick controls translation
+  // right stick controls the rotational velocity 
+  // buttons are quick rotation positions to different ways to face
+  // WARNING: default buttons are on the same buttons as the ones defined in configureBindings
+  AbsoluteDriveAdv closedAbsoluteDriveAdv = new AbsoluteDriveAdv(drivebase,
+                                                                 () -> -MathUtil.applyDeadband(driverController.getLeftY(),
+                                                                                               OperatorConstants.LEFT_Y_DEADBAND),
+                                                                 () -> -MathUtil.applyDeadband(driverController.getLeftX(),
+                                                                                               OperatorConstants.LEFT_X_DEADBAND),
+                                                                 () -> -MathUtil.applyDeadband(driverController.getRightX(),
+                                                                                               OperatorConstants.RIGHT_X_DEADBAND),
+                                                                 driverController.getHID()::getYButtonPressed,
+                                                                 driverController.getHID()::getAButtonPressed,
+                                                                 driverController.getHID()::getXButtonPressed,
+                                                                 driverController.getHID()::getBButtonPressed);
+
+  // Applies deadbands and inverts controls because joysticks
+  // are back-right positive while robot
+  // controls are front-left positive
+  // left stick controls translation
+  // right stick controls the angular velocity of the robot
+  Command driveFieldOrientedAnglularVelocity = drivebase.driveCommand(
+      () -> MathUtil.applyDeadband(driverController.getLeftY() * -1, OperatorConstants.LEFT_Y_DEADBAND),
+      () -> MathUtil.applyDeadband(driverController.getLeftX() * -1, OperatorConstants.LEFT_X_DEADBAND),
+      () -> driverController.getRightX() * -1);
 
   public RobotContainer() {
-    // NamedCommands.registerCommand("ExampleCommand", new ExampleCommand(subsystem));
-
     configureBindings();
-
-    Command driveFieldOrientedAnglularVelocity = drivebase.driveCommand(
-        () -> MathUtil.applyDeadband(driverController.getLeftY(), OperatorConstants.LEFT_Y_DEADBAND),
-        () -> MathUtil.applyDeadband(driverController.getLeftX(), OperatorConstants.LEFT_X_DEADBAND),
-        () -> driverController.getRightX() * 0.95);
-
-    // Command driveFieldOrientedAnglularVelocityAprilTagAlignment = drivebase.driveCommand(
-    //     () -> MathUtil.applyDeadband(driverController.getLeftY(), OperatorConstants.LEFT_Y_DEADBAND),
-    //     () -> MathUtil.applyDeadband(driverController.getLeftX(), OperatorConstants.LEFT_X_DEADBAND),
-    //     () -> driverController.getRightX() * 0.95,
-    //     () -> driverController.start().getAsBoolean(),
-    //     visionSubsystem.returnCamera()
-    // ); 
-
-    drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocity);
   }
 
   private void configureBindings() {
     driverController.back().onTrue(Commands.runOnce(drivebase::zeroGyro));
+    driverController.start().whileTrue(drivebase.centerModulesCommand());
+    driverController.povUp().whileTrue(drivebase.aimAtSpeaker(2));
 
-    // Schedule `exampleMethodCommand` when the Driver Controller's B button is pressed, cancelling on release.
-    driverController.b().whileTrue(exampleSubsystem.exampleMethodCommand());
-
-    // Schedule `ExampleCommand` when `exampleCondition` changes to `true`
-    new Trigger(exampleSubsystem::exampleCondition)
-      .onTrue(new ExampleCommand(exampleSubsystem));
+    drivebase.setDefaultCommand(closedAbsoluteDriveAdv);
   }
 
   public Command getAutonomousCommand() {
     return new ExampleAuton();
+  }
+
+  public void setDriveMode() {
+    configureBindings();
   }
 
   public void setMotorBrake(boolean brake) {
