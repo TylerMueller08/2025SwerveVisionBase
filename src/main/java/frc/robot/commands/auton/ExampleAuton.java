@@ -15,20 +15,22 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Robot;
 import frc.robot.RobotContainer;
 
-public class ExampleAuton extends AutoCommand {
-
+public class ExampleAuton extends AutoCommand
+{
     private final PathPlannerPath path1;
     private final PathPlannerPath path2;
     private final PathPlannerPath path3;
     private final PathPlannerPath path4;
 
-    public ExampleAuton() {
+    public ExampleAuton()
+    {
         path1 = PathPlannerPath.fromChoreoTrajectory("Path1");
         path2 = PathPlannerPath.fromChoreoTrajectory("Path2");
         path3 = PathPlannerPath.fromChoreoTrajectory("Path3");
         path4 = PathPlannerPath.fromChoreoTrajectory("Path4");
 
-        if (Robot.isSimulation()) {
+        if (Robot.isSimulation())
+        {
             addCommands(AutoBuildingBlocks.resetOdometry(path1));
         }
 
@@ -52,7 +54,8 @@ public class ExampleAuton extends AutoCommand {
     }
 
     @Override
-    public List<Pose2d> getAllPathPoses() {
+    public List<Pose2d> getAllPathPoses()
+    {
         return Stream.of(
             path1.getPathPoses(),
             path2.getPathPoses())
@@ -61,7 +64,8 @@ public class ExampleAuton extends AutoCommand {
     }
 
     @Override
-    public Pose2d getStartingPose() {
+    public Pose2d getStartingPose()
+    {
         return path1
             .getTrajectory(new ChassisSpeeds(), new Rotation2d())
             .getInitialTargetHolonomicPose();

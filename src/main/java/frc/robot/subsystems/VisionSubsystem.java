@@ -17,9 +17,6 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import frc.robot.Robot;
 import java.awt.Desktop;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -41,19 +38,34 @@ import swervelib.telemetry.Alert.AlertType;
 
 public class VisionSubsystem {
 
-  // April Tag Field Layout of the year.
+  /**
+   * April Tag Field Layout of the year.
+   */
   public static final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2024Crescendo);
   
-  // Photon Vision Simulation
+  /**
+   * Photon Vision Simulation.
+   */
   public VisionSystemSim visionSim;
 
-  // Count of times that the odom thinks we're more than 10meters away from the april tag.
+  /**
+   * Count of times that the odm thinks we're more than 10 meters away from the April Tag.
+   */
   private double longDistangePoseEstimationCount = 0;
 
-  // Current pose from the pose estimator using wheel odometry.
+  /**
+   * Current pose from the pose estimator using wheel odometry.
+   */
   private Supplier<Pose2d> currentPose;
+
+  /**
+   * Ambiguity defined as a value between (0,1). Used in {@link VisionSubsystem#filterPose}.
+   */
+  private final double maximumAmbiguity = 0.25;
   
-  // Photon Vision camera properties simulation.
+  /**
+   * Field from {@link swervelib.SwerveDrive#field}
+   */
   private Field2d field2d;
 
   /**
@@ -62,15 +74,18 @@ public class VisionSubsystem {
    * @param currentPose Current pose supplier, should reference {@link SwerveDrive#getPose()}
    * @param field       Current field, should be {@link SwerveDrive#field}
    */
-  public VisionSubsystem(Supplier<Pose2d> currentPose, Field2d field) {
+  public VisionSubsystem(Supplier<Pose2d> currentPose, Field2d field)
+  {
     this.currentPose = currentPose;
     this.field2d = field;
 
-    if (Robot.isSimulation()) {
+    if (Robot.isSimulation())
+    {
       visionSim = new VisionSystemSim("Vision");
       visionSim.addAprilTags(fieldLayout);
 
-      for (Cameras c : Cameras.values()) {
+      for (Cameras c : Cameras.values())
+      {
         c.addToVisionSim(visionSim);
       }
 
@@ -86,11 +101,14 @@ public class VisionSubsystem {
    *                    itself correctly.
    * @return The target pose of the AprilTag.
    */
-  public static Pose2d getAprilTagPose(int aprilTag, Transform2d robotOffset) {
+  public static Pose2d getAprilTagPose(int aprilTag, Transform2d robotOffset)
+  {
     Optional<Pose3d> aprilTagPose3d = fieldLayout.getTagPose(aprilTag);
-    if (aprilTagPose3d.isPresent()) {
+    if (aprilTagPose3d.isPresent())
+    {
       return aprilTagPose3d.get().toPose2d().transformBy(robotOffset);
-    } else {
+    } else
+    {
       throw new RuntimeException("Cannot get AprilTag " + aprilTag + " from field " + fieldLayout.toString());
     }
   }
@@ -100,13 +118,17 @@ public class VisionSubsystem {
    *
    * @param swerveDrive {@link SwerveDrive} instance.
    */
-  public void updatePoseEstimation(SwerveDrive swerveDrive) {
-    if (SwerveDriveTelemetry.isSimulation) {
+  public void updatePoseEstimation(SwerveDrive swerveDrive)
+  {
+    if (SwerveDriveTelemetry.isSimulation)
+    {
       visionSim.update(swerveDrive.getPose());
     }
-    for (Cameras camera : Cameras.values()) {
+    for (Cameras camera : Cameras.values())
+    {
       Optional<EstimatedRobotPose> poseEst = getEstimatedGlobalPose(camera);
-      if (poseEst.isPresent()) {
+      if (poseEst.isPresent())
+      {
         var pose = poseEst.get();
         swerveDrive.addVisionMeasurement(pose.estimatedPose.toPose2d(), pose.timestampSeconds, getEstimationStdDevs(camera));
       }
@@ -120,14 +142,17 @@ public class VisionSubsystem {
    * <li> The generated pose estimate was considered not accurate</li>
    * </ul>
    *
-   * @return an {@link EstimatedRobotPose} with an estimated pose, timestamp, and targets used to create the estimate
+   * @return an {@link EstimatedRobotPose} with an estimated pose, timestamp, and targets used to create the estimate.
    */
-  public Optional<EstimatedRobotPose> getEstimatedGlobalPose(Cameras camera) {
-    // Alternative method if you want to use both a pose filter and standard deviations based on distance + tags seen.
+  public Optional<EstimatedRobotPose> getEstimatedGlobalPose(Cameras camera)
+  {
     Optional<EstimatedRobotPose> poseEst = filterPose(camera.poseEstimator.update());
-    // Optional<EstimatedRobotPose> poseEst = camera.poseEstimator.update();
+
+    // Uncomment to enable outputting of vision targets in sim.
+    /*
     poseEst.ifPresent(estimatedRobotPose -> field2d.getObject(camera + " est pose")
                                                    .setPose(estimatedRobotPose.estimatedPose.toPose2d()));
+    */
     return poseEst;
   }
 
@@ -138,35 +163,47 @@ public class VisionSubsystem {
    *
    * @param camera Desired camera to get the standard deviation of the estimated pose.
    */
-  public Matrix<N3, N1> getEstimationStdDevs(Cameras camera) {
+  public Matrix<N3, N1> getEstimationStdDevs(Cameras camera)
+  {
     var    poseEst    = getEstimatedGlobalPose(camera);
     var    estStdDevs = camera.singleTagStdDevs;
     var    targets    = getLatestResult(camera).getTargets();
     int    numTags    = 0;
     double avgDist    = 0;
 
-    for (var tgt : targets) {
+    for (var tgt : targets)
+    {
       var tagPose = camera.poseEstimator.getFieldTags().getTagPose(tgt.getFiducialId());
-      if (tagPose.isEmpty()) { continue; }
+      if (tagPose.isEmpty()) 
+      {
+        continue;
+      }
       numTags++;
 
-      if (poseEst.isPresent()) {
+      if (poseEst.isPresent())
+      {
         avgDist += PhotonUtils.getDistanceToPose(poseEst.get().estimatedPose.toPose2d(), tagPose.get().toPose2d());
       }
     }
 
-    if (numTags == 0) { return estStdDevs; }
+    if (numTags == 0)
+    {
+      return estStdDevs;
+    }
     avgDist /= numTags;
 
     // Decrease std devs if multiple targets are visible
-    if (numTags > 1) {
+    if (numTags > 1)
+    {
       estStdDevs = camera.multiTagStdDevs;
     }
 
     // Increase std devs based on (average) distance
-    if (numTags == 1 && avgDist > 4) {
+    if (numTags == 1 && avgDist > 4)
+    {
       estStdDevs = VecBuilder.fill(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
-    } else {
+    } else
+    {
       estStdDevs = estStdDevs.times(1 + (avgDist * avgDist / 30));
     }
 
@@ -180,29 +217,38 @@ public class VisionSubsystem {
    * @param pose Estimated robot pose.
    * @return Could be empty if there isn't a good reading.
    */
-  private Optional<EstimatedRobotPose> filterPose(Optional<EstimatedRobotPose> pose) {
-    if (pose.isPresent()) {
+  private Optional<EstimatedRobotPose> filterPose(Optional<EstimatedRobotPose> pose)
+  {
+    if (pose.isPresent())
+    {
       double bestTargetAmbiguity = 1; // 1 is max ambiguity
-      for (PhotonTrackedTarget target : pose.get().targetsUsed) {
+      for (PhotonTrackedTarget target : pose.get().targetsUsed)
+      {
         double ambiguity = target.getPoseAmbiguity();
-        if (ambiguity != -1 && ambiguity < bestTargetAmbiguity) {
+        if (ambiguity != -1 && ambiguity < bestTargetAmbiguity)
+        {
           bestTargetAmbiguity = ambiguity;
         }
       }
+
       // ambiguity to high dont use estimate
-      if (bestTargetAmbiguity > 0.3) {
+      if (bestTargetAmbiguity > maximumAmbiguity)
+      {
         return Optional.empty();
       }
 
       // est pose is very far from recorded robot pose
-      if (PhotonUtils.getDistanceToPose(currentPose.get(), pose.get().estimatedPose.toPose2d()) > 1) {
+      if (PhotonUtils.getDistanceToPose(currentPose.get(), pose.get().estimatedPose.toPose2d()) > 1)
+      {
         longDistangePoseEstimationCount++;
 
         // if it calculates that were 10 meter away for more than 10 times in a row its probably right
-        if (longDistangePoseEstimationCount < 10) {
+        if (longDistangePoseEstimationCount < 10)
+        {
           return Optional.empty();
         }
-      } else {
+      } else
+      {
         longDistangePoseEstimationCount = 0;
       }
       return pose;
@@ -216,7 +262,8 @@ public class VisionSubsystem {
    * @param camera Given camera to take the result from.
    * @return Photon result from sim or a real camera.
    */
-  public PhotonPipelineResult getLatestResult(Cameras camera) {
+  public PhotonPipelineResult getLatestResult(Cameras camera)
+  {
     return Robot.isReal() ? camera.camera.getLatestResult() : camera.cameraSim.getCamera().getLatestResult();
   }
 
@@ -226,7 +273,8 @@ public class VisionSubsystem {
    * @param id AprilTag ID
    * @return Distance
    */
-  public double getDistanceFromAprilTag(int id) {
+  public double getDistanceFromAprilTag(int id)
+  {
     Optional<Pose3d> tag = fieldLayout.getTagPose(id);
     return tag.map(pose3d -> PhotonUtils.getDistanceToPose(currentPose.get(), pose3d.toPose2d())).orElse(-1.0);
   }
@@ -238,11 +286,14 @@ public class VisionSubsystem {
    * @param camera Camera to check.
    * @return Tracked target.
    */
-  public PhotonTrackedTarget getTargetFromId(int id, Cameras camera) {
+  public PhotonTrackedTarget getTargetFromId(int id, Cameras camera)
+  {
     PhotonTrackedTarget  target = null;
     PhotonPipelineResult result = getLatestResult(camera);
-    if (result.hasTargets()) {
-      for (PhotonTrackedTarget i : result.getTargets()) {
+    if (result.hasTargets())
+    {
+      for (PhotonTrackedTarget i : result.getTargets())
+      {
         if (i.getFiducialId() == id) {
           target = i;
         }
@@ -256,39 +307,51 @@ public class VisionSubsystem {
    *
    * @return Vision Simulation
    */
-  public VisionSystemSim getVisionSim() {
+  public VisionSystemSim getVisionSim()
+  {
     return visionSim;
   }
 
   /**
    * Open up the photon vision camera streams on the localhost, assumes running photon vision on localhost.
    */
-  private void openSimCameraViews() {
-    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-      try {
+  private void openSimCameraViews()
+  {
+    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE))
+    {
+      /*
+      try
+      {
         Desktop.getDesktop().browse(new URI("http://localhost:1182/"));
         Desktop.getDesktop().browse(new URI("http://localhost:1184/"));
         Desktop.getDesktop().browse(new URI("http://localhost:1186/"));
-      } catch (IOException | URISyntaxException e) {
+      } catch (IOException | URISyntaxException e)
+      {
         e.printStackTrace();
       }
+      */
     }
   }
 
   /**
    * Update the {@link Field2d} to include tracked targets.
    */
-  public void updateVisionField() {
+  public void updateVisionField()
+  {
     List<PhotonTrackedTarget> targets = new ArrayList<PhotonTrackedTarget>();
-    for (Cameras c : Cameras.values()) {
-      if (getLatestResult(c).hasTargets()) {
+    for (Cameras c : Cameras.values())
+    {
+      if (getLatestResult(c).hasTargets())
+      {
         targets.addAll(getLatestResult(c).targets);
       }
     }
 
     List<Pose2d> poses = new ArrayList<>();
-    for (PhotonTrackedTarget target : targets) {
-      if (fieldLayout.getTagPose(target.getFiducialId()).isPresent()) {
+    for (PhotonTrackedTarget target : targets)
+    {
+      if (fieldLayout.getTagPose(target.getFiducialId()).isPresent())
+      {
         Pose2d targetPose = fieldLayout.getTagPose(target.getFiducialId()).get().toPose2d();
         poses.add(targetPose);
       }
@@ -300,12 +363,13 @@ public class VisionSubsystem {
   /**
    * Camera Enum to select each camera
    */
-  enum Cameras {
+  enum Cameras
+  {
     /**
      * Primary AprilTag Camera
      */
-    APRILTAG_CAM("DroidCam_Video",
-               new Rotation3d(0, Units.degreesToRadians(0), 0),
+    APRILTAG_CAM("OV9281",
+               new Rotation3d(0, Units.degreesToRadians(0), Math.toRadians(0)),
                new Translation3d(0.5,
                                  0.0,
                                  0.5),
@@ -381,9 +445,12 @@ public class VisionSubsystem {
      *
      * @param systemSim {@link VisionSystemSim} to use.
      */
-    public void addToVisionSim(VisionSystemSim systemSim) {
-      if (Robot.isSimulation()) {
+    public void addToVisionSim(VisionSystemSim systemSim)
+    {
+      if (Robot.isSimulation())
+      {
         systemSim.addCamera(cameraSim, robotToCamTransform);
+        // cameraSim.enableDrawWireframe(true);
       }
     }
   }

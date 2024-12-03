@@ -16,10 +16,11 @@ import frc.robot.subsystems.SwerveSubsystem;
 
 import java.io.File;
 
-public class RobotContainer {
+public class RobotContainer
+{
 
   // Controller(s)
-  private final CommandXboxController driverController = new CommandXboxController(0);
+  final CommandXboxController driverController = new CommandXboxController(0);
 
   // Subsystems
   public final static SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), "swerve"));
@@ -53,11 +54,13 @@ public class RobotContainer {
       () -> MathUtil.applyDeadband(driverController.getLeftX() * -1, OperatorConstants.LEFT_X_DEADBAND),
       () -> driverController.getRightX() * -1);
 
-  public RobotContainer() {
+  public RobotContainer()
+  {
     configureBindings();
   }
 
-  private void configureBindings() {
+  private void configureBindings()
+  {
     driverController.back().onTrue(Commands.runOnce(drivebase::zeroGyro));
     driverController.start().whileTrue(drivebase.centerModulesCommand());
     driverController.povUp().whileTrue(drivebase.aimAtSpeaker(2));
@@ -65,15 +68,18 @@ public class RobotContainer {
     drivebase.setDefaultCommand(closedAbsoluteDriveAdv);
   }
 
-  public Command getAutonomousCommand() {
+  public Command getAutonomousCommand()
+  {
     return new ExampleAuton();
   }
 
-  public void setDriveMode() {
+  public void setDriveMode()
+  {
     configureBindings();
   }
 
-  public void setMotorBrake(boolean brake) {
+  public void setMotorBrake(boolean brake)
+  {
     drivebase.setMotorBrake(brake);
   }
 }

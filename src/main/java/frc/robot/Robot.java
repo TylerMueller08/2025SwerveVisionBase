@@ -24,11 +24,13 @@ public class Robot extends TimedRobot
 
   private Timer disabledTimer;
 
-  public Robot() {
+  public Robot()
+  {
     instance = this;
   }
 
-  public static Robot getInstance() {
+  public static Robot getInstance()
+  {
     return instance;
   }
 
@@ -66,14 +68,16 @@ public class Robot extends TimedRobot
    * This function is called once each time the robot enters Disabled mode.
    */
   @Override
-  public void disabledInit() {
+  public void disabledInit()
+  {
     m_robotContainer.setMotorBrake(true);
     disabledTimer.reset();
     disabledTimer.start();
   }
 
   @Override
-  public void disabledPeriodic() {
+  public void disabledPeriodic()
+  {
     if (disabledTimer.hasElapsed(Constants.DrivebaseConstants.WHEEL_LOCK_TIME)) {
       m_robotContainer.setMotorBrake(false);
       disabledTimer.stop();
@@ -84,7 +88,8 @@ public class Robot extends TimedRobot
    * This autonomous runs the autonomous command selected by your {@link RobotContainer} class.
    */
   @Override
-  public void autonomousInit() {
+  public void autonomousInit()
+  {
     m_robotContainer.setMotorBrake(true);
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
@@ -102,14 +107,17 @@ public class Robot extends TimedRobot
   public void autonomousPeriodic() {}
 
   @Override
-  public void teleopInit() {
+  public void teleopInit()
+  {
     // This makes sure that the autonomous stops running when
     // teleop starts running. If you want the autonomous to
     // continue until interrupted by another command, remove
     // this line or comment it out.
-    if (m_autonomousCommand != null) {
+    if (m_autonomousCommand != null)
+    {
       m_autonomousCommand.cancel();
-    } else {
+    } else
+    {
       CommandScheduler.getInstance().cancelAll();
     }
     m_robotContainer.setDriveMode();
@@ -123,7 +131,8 @@ public class Robot extends TimedRobot
   public void teleopPeriodic() {}
 
   @Override
-  public void testInit() {
+  public void testInit()
+  {
     // Cancels all running commands at the start of test mode.
     CommandScheduler.getInstance().cancelAll();
     m_robotContainer.setDriveMode();
