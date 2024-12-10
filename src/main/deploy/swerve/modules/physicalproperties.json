@@ -1,6 +1,5 @@
 {
   "optimalVoltage": 12,
-  "robotMass": 60,
   "wheelGripCoefficientOfFriction": 1.19,
   "currentLimit": {
     "drive": 40,
@@ -8,13 +7,11 @@
   },
   "conversionFactors": {
     "angle": {
-      "gearRatio": 18.75,
-      "factor": 19.2
+      "gearRatio": 18.75
     },
     "drive": {
       "diameter": 4,
-      "gearRatio": 5.36,
-      "factor": 0.05954959209043339
+      "gearRatio": 5.36
     }
   },
   "rampRate": {

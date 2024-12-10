@@ -5,12 +5,12 @@
   },
   "absoluteEncoderOffset": 0,
   "drive": {
-    "type": "krakenx60",
+    "type": "talonfx",
     "id": 6,
     "canbus": "drivebase"
   },
   "angle": {
-    "type": "krakenx60",
+    "type": "talonfx",
     "id": 7,
     "canbus": "drivebase"
   },
