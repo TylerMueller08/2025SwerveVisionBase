@@ -6,7 +6,6 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
@@ -15,8 +14,6 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import frc.robot.Robot;
-import java.awt.Desktop;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -26,14 +23,10 @@ import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonPoseEstimator.PoseStrategy;
 import org.photonvision.PhotonUtils;
-import org.photonvision.simulation.PhotonCameraSim;
-import org.photonvision.simulation.SimCameraProperties;
-import org.photonvision.simulation.VisionSystemSim;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 import swervelib.SwerveDrive;
 import swervelib.telemetry.Alert;
-import swervelib.telemetry.SwerveDriveTelemetry;
 import swervelib.telemetry.Alert.AlertType;
 
 public class VisionSubsystem {
@@ -42,11 +35,6 @@ public class VisionSubsystem {
    * April Tag Field Layout of the year.
    */
   public static final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2024Crescendo);
-  
-  /**
-   * Photon Vision Simulation.
-   */
-  public VisionSystemSim visionSim;
 
   /**
    * Count of times that the odm thinks we're more than 10 meters away from the April Tag.
@@ -78,19 +66,6 @@ public class VisionSubsystem {
   {
     this.currentPose = currentPose;
     this.field2d = field;
-
-    if (Robot.isSimulation())
-    {
-      visionSim = new VisionSystemSim("Vision");
-      visionSim.addAprilTags(fieldLayout);
-
-      for (Cameras c : Cameras.values())
-      {
-        c.addToVisionSim(visionSim);
-      }
-
-      openSimCameraViews();
-    }
   }
 
   /**
@@ -120,10 +95,6 @@ public class VisionSubsystem {
    */
   public void updatePoseEstimation(SwerveDrive swerveDrive)
   {
-    if (SwerveDriveTelemetry.isSimulation)
-    {
-      visionSim.update(swerveDrive.getPose());
-    }
     for (Cameras camera : Cameras.values())
     {
       Optional<EstimatedRobotPose> poseEst = getEstimatedGlobalPose(camera);
@@ -147,12 +118,6 @@ public class VisionSubsystem {
   public Optional<EstimatedRobotPose> getEstimatedGlobalPose(Cameras camera)
   {
     Optional<EstimatedRobotPose> poseEst = filterPose(camera.poseEstimator.update());
-
-    // Uncomment to enable outputting of vision targets in sim.
-    /*
-    poseEst.ifPresent(estimatedRobotPose -> field2d.getObject(camera + " est pose")
-                                                   .setPose(estimatedRobotPose.estimatedPose.toPose2d()));
-    */
     return poseEst;
   }
 
@@ -264,7 +229,7 @@ public class VisionSubsystem {
    */
   public PhotonPipelineResult getLatestResult(Cameras camera)
   {
-    return Robot.isReal() ? camera.camera.getLatestResult() : camera.cameraSim.getCamera().getLatestResult();
+    return camera.camera.getLatestResult();
   }
 
   /**
@@ -300,37 +265,6 @@ public class VisionSubsystem {
       }
     }
     return target;
-  }
-
-  /**
-   * Vision simulation.
-   *
-   * @return Vision Simulation
-   */
-  public VisionSystemSim getVisionSim()
-  {
-    return visionSim;
-  }
-
-  /**
-   * Open up the photon vision camera streams on the localhost, assumes running photon vision on localhost.
-   */
-  private void openSimCameraViews()
-  {
-    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE))
-    {
-      /*
-      try
-      {
-        Desktop.getDesktop().browse(new URI("http://localhost:1182/"));
-        Desktop.getDesktop().browse(new URI("http://localhost:1184/"));
-        Desktop.getDesktop().browse(new URI("http://localhost:1186/"));
-      } catch (IOException | URISyntaxException e)
-      {
-        e.printStackTrace();
-      }
-      */
-    }
   }
 
   /**
@@ -389,9 +323,6 @@ public class VisionSubsystem {
     
     // Transform of the camera rotation and translation relative to the center of the robot
     private final Transform3d         robotToCamTransform;
-    
-    // Simulated camera instance which only exists during simulations.
-    public        PhotonCameraSim     cameraSim;
 
     /**
      * Construct a Photon Camera class with help. Standard deviations are fake values, experiment and determine
@@ -421,37 +352,6 @@ public class VisionSubsystem {
 
       this.singleTagStdDevs = singleTagStdDevs;
       this.multiTagStdDevs = multiTagStdDevsMatrix;
-
-      if (Robot.isSimulation())
-      {
-        SimCameraProperties cameraProp = new SimCameraProperties();
-        // A 640 x 480 camera with a 100 degree diagonal FOV.
-        cameraProp.setCalibration(960, 720, Rotation2d.fromDegrees(100));
-        // Approximate detection noise with average and standard deviation error in pixels.
-        cameraProp.setCalibError(0.25, 0.08);
-        // Set the camera image capture framerate (Note: this is limited by robot loop rate).
-        cameraProp.setFPS(30);
-        // The average and standard deviation in milliseconds of image data latency.
-        cameraProp.setAvgLatencyMs(35);
-        cameraProp.setLatencyStdDevMs(5);
-
-        cameraSim = new PhotonCameraSim(camera, cameraProp);
-        cameraSim.enableDrawWireframe(true);
-      }
-    }
-
-    /**
-     * Add camera to {@link VisionSystemSim} for simulated photon vision.
-     *
-     * @param systemSim {@link VisionSystemSim} to use.
-     */
-    public void addToVisionSim(VisionSystemSim systemSim)
-    {
-      if (Robot.isSimulation())
-      {
-        systemSim.addCamera(cameraSim, robotToCamTransform);
-        // cameraSim.enableDrawWireframe(true);
-      }
     }
   }
 }
