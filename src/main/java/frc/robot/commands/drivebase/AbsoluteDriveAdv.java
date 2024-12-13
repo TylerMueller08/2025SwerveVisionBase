@@ -18,7 +18,7 @@ import swervelib.SwerveController;
 import swervelib.math.SwerveMath;
 
 /**
- * A more advanced Swerve Control System that has 4 buttons for which direction to face
+ * A more advanced Swerve Control Command that has 4 buttons for which direction to face
  */
 public class AbsoluteDriveAdv extends Command
 {
@@ -112,7 +112,7 @@ public class AbsoluteDriveAdv extends Command
         headingX = currentHeading.getSin();
         headingY = currentHeading.getCos();
       }
-      //Dont reset Heading Again
+      // Dont reset Heading Again
       resetHeading = false;
     }
 
@@ -139,9 +139,7 @@ public class AbsoluteDriveAdv extends Command
 
   // Called once the command ends or is interrupted.
   @Override
-  public void end(boolean interrupted)
-  {
-  }
+  public void end(boolean interrupted) {}
 
   // Returns true when the command should end.
   @Override
