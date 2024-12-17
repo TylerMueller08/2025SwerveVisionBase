@@ -65,7 +65,7 @@ public class RobotContainer
     driverController.start().whileTrue(drivebase.centerModulesCommand());
     // driverController.povUp().whileTrue(drivebase.aimAtSpeaker(2));
 
-    drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocity);
+    drivebase.setDefaultCommand(closedAbsoluteDriveAdv);
   }
 
   public Command getAutonomousCommand()
