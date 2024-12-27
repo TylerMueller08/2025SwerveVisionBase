@@ -17,10 +17,7 @@ import java.util.function.DoubleSupplier;
 import swervelib.SwerveController;
 import swervelib.math.SwerveMath;
 
-/**
- * A more advanced Swerve Control Command that has 4 buttons for which direction to face
- */
-public class AbsoluteDriveAdv extends Command
+public class FieldCentricDrive extends Command
 {
 
   private final SwerveSubsystem swerve;
@@ -32,8 +29,7 @@ public class AbsoluteDriveAdv extends Command
   /**
    * Used to drive a swerve robot in full field-centric mode.  vX and vY supply translation inputs, where x is
    * torwards/away from alliance wall and y is left/right. Heading Adjust changes the current heading after being
-   * multipied by a constant. The look booleans are shortcuts to get the robot to face a certian direction. Based off of
-   * ideas in https://www.chiefdelphi.com/t/experiments-with-a-swerve-steering-knob/446172
+   * multipied by a constant. The look booleans are shortcuts to get the robot to face a certian direction
    *
    * @param swerve        The swerve drivebase subsystem.
    * @param vX            DoubleSupplier that supplies the x-translation joystick input.  Should be in the range -1 to 1
@@ -49,7 +45,7 @@ public class AbsoluteDriveAdv extends Command
    * @param lookLeft      Face the robot left
    * @param lookRight     Face the robot right
    */
-  public AbsoluteDriveAdv(SwerveSubsystem swerve, DoubleSupplier vX, DoubleSupplier vY, DoubleSupplier headingAdjust,
+  public FieldCentricDrive(SwerveSubsystem swerve, DoubleSupplier vX, DoubleSupplier vY, DoubleSupplier headingAdjust,
                           BooleanSupplier lookAway, BooleanSupplier lookTowards, BooleanSupplier lookLeft,
                           BooleanSupplier lookRight)
   {

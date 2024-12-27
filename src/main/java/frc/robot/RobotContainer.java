@@ -11,7 +11,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.auton.ExampleAuton;
-import frc.robot.commands.drivebase.AbsoluteDriveAdv;
+import frc.robot.commands.drivebase.FieldCentricDrive;
 import frc.robot.subsystems.SwerveSubsystem;
 
 import java.io.File;
@@ -32,7 +32,7 @@ public class RobotContainer
   // right stick controls the rotational velocity 
   // buttons are quick rotation positions to different ways to face
   // WARNING: default buttons are on the same buttons as the ones defined in configureBindings
-  AbsoluteDriveAdv closedAbsoluteDriveAdv = new AbsoluteDriveAdv(drivebase,
+  FieldCentricDrive fieldCentricDrive = new FieldCentricDrive(drivebase,
                                                                  () -> -MathUtil.applyDeadband(driverController.getLeftY(),
                                                                                                OperatorConstants.LEFT_Y_DEADBAND),
                                                                  () -> -MathUtil.applyDeadband(driverController.getLeftX(),
@@ -65,7 +65,7 @@ public class RobotContainer
     driverController.start().whileTrue(drivebase.centerModulesCommand());
     // driverController.povUp().whileTrue(drivebase.aimAtSpeaker(2));
 
-    drivebase.setDefaultCommand(closedAbsoluteDriveAdv);
+    drivebase.setDefaultCommand(fieldCentricDrive);
   }
 
   public Command getAutonomousCommand()
