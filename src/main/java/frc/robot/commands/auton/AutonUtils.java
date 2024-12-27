@@ -9,7 +9,7 @@ package frc.robot.commands.auton;
 // import edu.wpi.first.wpilibj2.command.Command;
 // import frc.robot.RobotContainer;
 
-public class AutoBuildingBlocks
+public class AutonUtils
 {
 
     // public static Command resetOdometry(PathPlannerPath choreoPath)

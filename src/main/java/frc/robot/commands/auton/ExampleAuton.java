@@ -15,7 +15,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Robot;
 import frc.robot.RobotContainer;
 
-public class ExampleAuton extends AutoCommand
+public class ExampleAuton extends AutonCommand
 {
     // private final PathPlannerPath path1;
     // private final PathPlannerPath path2;
