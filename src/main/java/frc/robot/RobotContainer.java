@@ -63,6 +63,8 @@ public class RobotContainer
 
   Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
 
+  Command driveSetpointGen = drivebase.driveWithSetpointGeneratorFieldRelative(driveDirectAngle);
+
   public RobotContainer()
   {
     configureBindings();
