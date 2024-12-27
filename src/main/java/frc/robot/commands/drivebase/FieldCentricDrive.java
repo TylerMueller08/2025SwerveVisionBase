@@ -7,7 +7,6 @@ package frc.robot.commands.drivebase;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.subsystems.SwerveSubsystem;
@@ -74,23 +73,18 @@ public class FieldCentricDrive extends Command
     double headingX = 0;
     double headingY = 0;
 
-    // These are written to allow combinations for 45 angles
-    // Face Away from Drivers
     if (lookAway.getAsBoolean())
     {
       headingY = -1;
     }
-    // Face Right
     if (lookRight.getAsBoolean())
     {
       headingX = 1;
     }
-    // Face Left
     if (lookLeft.getAsBoolean())
     {
       headingX = -1;
     }
-    // Face Towards the Drivers
     if (lookTowards.getAsBoolean())
     {
       headingY = 1;
@@ -114,13 +108,11 @@ public class FieldCentricDrive extends Command
 
     ChassisSpeeds desiredSpeeds = swerve.getTargetSpeeds(vX.getAsDouble(), vY.getAsDouble(), headingX, headingY);
 
-    // Limit velocity to prevent tippy
+    // Limit velocity to prevent tipping
     Translation2d translation = SwerveController.getTranslation2d(desiredSpeeds);
     translation = SwerveMath.limitVelocity(translation, swerve.getFieldVelocity(), swerve.getPose(),
                                            Constants.LOOP_TIME, Constants.ROBOT_MASS, List.of(Constants.CHASSIS),
                                            swerve.getSwerveDriveConfiguration());
-    SmartDashboard.putNumber("LimitedTranslation", translation.getX());
-    SmartDashboard.putString("Translation", translation.toString());
 
     // Make the robot move
     if (headingX == 0 && headingY == 0 && Math.abs(headingAdjust.getAsDouble()) > 0)
