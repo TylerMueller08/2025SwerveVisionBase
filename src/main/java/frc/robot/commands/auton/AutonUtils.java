@@ -1,26 +1,34 @@
 package frc.robot.commands.auton;
 
-import java.io.IOException;
-
-import org.json.simple.parser.ParseException;
-
 import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.path.PathConstraints;
 import com.pathplanner.lib.path.PathPlannerPath;
-import com.pathplanner.lib.util.FileVersionException;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.RobotContainer;
 
 public class AutonUtils
 {
+    /**
+     * Field length in meters
+     */
     private static final double FIELD_LENGTH = 16.54;
 
+    /**
+     * Robot Constraints for Pathfinding
+     */
+    public static final PathConstraints CONSTRAINTS = new PathConstraints(3.0, 4.0, Units.degreesToRadians(540), Units.degreesToRadians(720));
+
+    /**
+     * Robot Configuration for generating trajectories
+     */
     public static RobotConfig robotConfig;
 
     static {
@@ -28,7 +36,7 @@ public class AutonUtils
 
         try {
             robotConfig = RobotConfig.fromGUISettings();
-        } catch (IOException | ParseException e) {
+        } catch (Exception e) {
             System.err.println("Error loading robot configuration from GUI settings. Using default values.");
             e.printStackTrace();
             robotConfig = new RobotConfig(27.2155, 6.883, moduleConfig, 0.530225);
@@ -36,27 +44,32 @@ public class AutonUtils
     }
     
     public static Command resetOdometry(PathPlannerPath choreoPath)
-        {
-            return RobotContainer.drivebase.runOnce(
-                () -> {
-                    Pose2d pose = choreoPath
-                        .generateTrajectory(new ChassisSpeeds(), new Rotation2d(), robotConfig)
-                        .getInitialPose();
+    {
+        return RobotContainer.drivebase.runOnce(
+            () -> {
+                Pose2d pose = choreoPath
+                    .generateTrajectory(new ChassisSpeeds(), new Rotation2d(), robotConfig)
+                    .getInitialPose();
 
-                if (RobotContainer.drivebase.isRedAlliance())
-                {
-                    pose = flipFieldPose(pose);
-                }
+            if (RobotContainer.drivebase.isRedAlliance())
+            {
+                pose = flipFieldPose(pose);
+            }
 
-                RobotContainer.drivebase.resetOdometry(pose);
-            });
+            RobotContainer.drivebase.resetOdometry(pose);
+        });
     }
 
+    /**
+     * Load the PathPlanner trajectory file to path
+     * @param pathName Name of the path
+     * @return PathPlanner Path
+     */
     public static PathPlannerPath loadPath(String pathName)
     {
         try {
             return PathPlannerPath.fromPathFile(pathName);
-        } catch (IOException | ParseException | FileVersionException e) {
+        } catch (Exception e) {
             System.err.println("Failed to load path: " + pathName);
             e.printStackTrace();
         }
