@@ -41,7 +41,7 @@ public class AutonUtils
                 () -> {
                     Pose2d pose = choreoPath
                         .generateTrajectory(new ChassisSpeeds(), new Rotation2d(), robotConfig)
-                        .getInitialPose(); // Should be getInitialTargetHolonomicPose(), deprecated?
+                        .getInitialPose();
 
                 if (RobotContainer.drivebase.isRedAlliance())
                 {
@@ -55,7 +55,7 @@ public class AutonUtils
     public static PathPlannerPath loadPath(String pathName)
     {
         try {
-            return PathPlannerPath.fromChoreoTrajectory(pathName);
+            return PathPlannerPath.fromPathFile(pathName);
         } catch (IOException | ParseException | FileVersionException e) {
             System.err.println("Failed to load path: " + pathName);
             e.printStackTrace();

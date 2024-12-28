@@ -6,6 +6,7 @@ package frc.robot;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -30,16 +31,16 @@ public class RobotContainer
    * Swerve Drive Command with full field-centric mode and heading correction.
    */
   FieldCentricDrive fieldCentricDrive = new FieldCentricDrive(drivebase,
-                                                                 () -> -MathUtil.applyDeadband(driverController.getLeftY(),
-                                                                                               OperatorConstants.LEFT_Y_DEADBAND),
-                                                                 () -> -MathUtil.applyDeadband(driverController.getLeftX(),
-                                                                                               OperatorConstants.DEADBAND),
-                                                                 () -> -MathUtil.applyDeadband(driverController.getRightX(),
-                                                                                               OperatorConstants.RIGHT_X_DEADBAND),
-                                                                 driverController.getHID()::getYButtonPressed,
-                                                                 driverController.getHID()::getAButtonPressed,
-                                                                 driverController.getHID()::getXButtonPressed,
-                                                                 driverController.getHID()::getBButtonPressed);
+                                                                () -> -MathUtil.applyDeadband(driverController.getLeftY(),
+                                                                                              OperatorConstants.LEFT_Y_DEADBAND),
+                                                                () -> -MathUtil.applyDeadband(driverController.getLeftX(),
+                                                                                              OperatorConstants.DEADBAND),
+                                                                () -> -MathUtil.applyDeadband(driverController.getRightX(),
+                                                                                              OperatorConstants.RIGHT_X_DEADBAND),
+                                                                driverController.getHID()::getYButtonPressed,
+                                                                driverController.getHID()::getAButtonPressed,
+                                                                driverController.getHID()::getXButtonPressed,
+                                                                driverController.getHID()::getBButtonPressed);
 
   /**
    * Converts driver input into a field-relative ChassisSpeeds that is controlled by angular velocity.
@@ -59,7 +60,26 @@ public class RobotContainer
                                                                                              driverController::getRightY)
                                                                                             .headingWhile(true);
 
-  Command driveFieldOrientedAnglularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
+
+  SwerveInputStream driveAngularVelocitySim = SwerveInputStream.of(drivebase.getSwerveDrive(),
+                                                                  () -> -driverController.getLeftY(),
+                                                                  () -> -driverController.getLeftX())
+                                                                .withControllerRotationAxis(() -> driverController.getRawAxis(2))
+                                                                .deadband(OperatorConstants.DEADBAND)
+                                                                .scaleTranslation(0.8)
+                                                                .allianceRelativeControl(true);
+
+  /**
+   * Derive the heading axis with math
+   */
+  SwerveInputStream driveDirectAngleSim = driveAngularVelocitySim.copy()
+    .withControllerHeadingAxis(() -> Math.sin(driverController.getRawAxis(2) * Math.PI) * (Math.PI * 2),
+                               () -> Math.cos(driverController.getRawAxis(2) * Math.PI) * (Math.PI * 2))
+    .headingWhile(true);
+
+  Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
+
+  Command driveFieldOrientedDirectAngleSim = drivebase.driveFieldOriented(driveAngularVelocitySim);
 
   Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
 
@@ -73,7 +93,9 @@ public class RobotContainer
   private void configureBindings()
   {
     // (Condition) ? Return-On-True : Return-On-False
-    drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocity);
+    drivebase.setDefaultCommand(!RobotBase.isSimulation() ?
+                                driveFieldOrientedAngularVelocity :
+                                driveFieldOrientedDirectAngleSim);
 
     driverController.back().onTrue(Commands.runOnce(drivebase::zeroGyro));
     driverController.start().whileTrue(drivebase.centerModulesCommand());
