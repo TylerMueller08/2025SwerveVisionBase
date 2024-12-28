@@ -48,7 +48,7 @@ public class AutonUtils
         return RobotContainer.drivebase.runOnce(
             () -> {
                 Pose2d pose = choreoPath
-                    .generateTrajectory(new ChassisSpeeds(), new Rotation2d(), robotConfig)
+                    .generateTrajectory(new ChassisSpeeds(), new Rotation2d(Math.PI), robotConfig)
                     .getInitialPose();
 
             if (RobotContainer.drivebase.isRedAlliance())

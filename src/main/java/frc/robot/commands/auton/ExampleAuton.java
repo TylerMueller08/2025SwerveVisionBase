@@ -36,7 +36,7 @@ public class ExampleAuton extends AutonCommand
             Commands.sequence(
                 AutoBuilder.followPath(path1),
                 AutoBuilder.followPath(path2),
-                RobotContainer.drivebase.aimAtSpeaker(0.1),
+                RobotContainer.drivebase.aimAtSpeaker(5.0),
                 AutoBuilder.pathfindThenFollowPath(path3, AutonUtils.CONSTRAINTS)
             )
         );
