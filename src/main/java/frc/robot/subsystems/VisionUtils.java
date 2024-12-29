@@ -43,7 +43,6 @@ import swervelib.telemetry.SwerveDriveTelemetry;
 
 public class VisionUtils
 {
-
   /**
    * April Tag Field Layout of the year.
    */
@@ -69,7 +68,6 @@ public class VisionUtils
    * Field from {@link swervelib.SwerveDrive#field}
    */
   private             Field2d             field2d;
-
 
   /**
    * Constructor for the Vision class.
@@ -146,7 +144,6 @@ public class VisionUtils
                                          camera.curStdDevs);
       }
     }
-
   }
 
   /**
@@ -262,7 +259,6 @@ public class VisionUtils
       }
     }
     return target;
-
   }
 
   /**
@@ -299,7 +295,6 @@ public class VisionUtils
    */
   public void updateVisionField()
   {
-
     List<PhotonTrackedTarget> targets = new ArrayList<PhotonTrackedTarget>();
     for (Cameras c : Cameras.values())
     {
@@ -568,8 +563,7 @@ public class VisionUtils
      * @param estimatedPose The estimated pose to guess standard deviations for.
      * @param targets       All targets in this camera frame
      */
-    private void updateEstimationStdDevs(
-        Optional<EstimatedRobotPose> estimatedPose, List<PhotonTrackedTarget> targets)
+    private void updateEstimationStdDevs(Optional<EstimatedRobotPose> estimatedPose, List<PhotonTrackedTarget> targets)
     {
       if (estimatedPose.isEmpty())
       {
