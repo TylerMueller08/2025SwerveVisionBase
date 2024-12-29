@@ -10,6 +10,7 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
@@ -21,6 +22,8 @@ import edu.wpi.first.networktables.NetworkTablesJNI;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import frc.robot.Robot;
+import java.awt.Desktop;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -30,9 +33,13 @@ import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonPoseEstimator.PoseStrategy;
 import org.photonvision.PhotonUtils;
+import org.photonvision.simulation.PhotonCameraSim;
+import org.photonvision.simulation.SimCameraProperties;
+import org.photonvision.simulation.VisionSystemSim;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 import swervelib.SwerveDrive;
+import swervelib.telemetry.SwerveDriveTelemetry;
 
 public class VisionUtils
 {
@@ -46,6 +53,10 @@ public class VisionUtils
    * Ambiguity defined as a value between (0,1). Used in {@link Vision#filterPose}.
    */
   private final       double              maximumAmbiguity                = 0.25;
+  /**
+   * Photon Vision Simulation
+   */
+  public              VisionSystemSim     visionSim;
   /**
    * Count of times that the odom thinks we're more than 10meters away from the april tag.
    */
@@ -70,6 +81,19 @@ public class VisionUtils
   {
     this.currentPose = currentPose;
     this.field2d = field;
+
+    if (Robot.isSimulation())
+    {
+      visionSim = new VisionSystemSim("Vision");
+      visionSim.addAprilTags(fieldLayout);
+
+      for (Cameras c : Cameras.values())
+      {
+        c.addToVisionSim(visionSim);
+      }
+
+      openSimCameraViews();
+    }
   }
 
   /**
@@ -90,6 +114,7 @@ public class VisionUtils
     {
       throw new RuntimeException("Cannot get AprilTag " + aprilTag + " from field " + fieldLayout.toString());
     }
+
   }
 
   /**
@@ -99,6 +124,17 @@ public class VisionUtils
    */
   public void updatePoseEstimation(SwerveDrive swerveDrive)
   {
+    if (SwerveDriveTelemetry.isSimulation && swerveDrive.getSimulationDriveTrainPose().isPresent())
+    {
+      /*
+       * In the maple-sim, odometry is simulated using encoder values, accounting for factors like skidding and drifting.
+       * As a result, the odometry may not always be 100% accurate.
+       * However, the vision system should be able to provide a reasonably accurate pose estimation, even when odometry is incorrect.
+       * (This is why teams implement vision system to correct odometry.)
+       * Therefore, we must ensure that the actual robot pose is provided in the simulator when updating the vision simulation during the simulation.
+       */
+      visionSim.update(swerveDrive.getSimulationDriveTrainPose().get());
+    }
     for (Cameras camera : Cameras.values())
     {
       Optional<EstimatedRobotPose> poseEst = getEstimatedGlobalPose(camera);
@@ -125,8 +161,22 @@ public class VisionUtils
   public Optional<EstimatedRobotPose> getEstimatedGlobalPose(Cameras camera)
   {
     Optional<EstimatedRobotPose> poseEst = camera.getEstimatedGlobalPose();
+    if (Robot.isSimulation())
+    {
+      Field2d debugField = visionSim.getDebugField();
+      // Uncomment to enable outputting of vision targets in sim.
+      poseEst.ifPresentOrElse(
+          est ->
+              debugField
+                  .getObject("VisionEstimation")
+                  .setPose(est.estimatedPose.toPose2d()),
+          () -> {
+            debugField.getObject("VisionEstimation").setPoses();
+          });
+    }
     return poseEst;
   }
+
 
   /**
    * Filter pose via the ambiguity and find best estimate between all of the camera's throwing out distances more than
@@ -150,18 +200,18 @@ public class VisionUtils
           bestTargetAmbiguity = ambiguity;
         }
       }
-      // Ambiguity to high dont use estimate
+      //ambiguity to high dont use estimate
       if (bestTargetAmbiguity > maximumAmbiguity)
       {
         return Optional.empty();
       }
 
-      // Estimated pose is very far from recorded robot pose
+      //est pose is very far from recorded robot pose
       if (PhotonUtils.getDistanceToPose(currentPose.get(), pose.get().estimatedPose.toPose2d()) > 1)
       {
         longDistangePoseEstimationCount++;
 
-        // If it calculates that were 10 meter away for more than 10 times in a row, it's probably right
+        //if it calculates that were 10 meter away for more than 10 times in a row its probably right
         if (longDistangePoseEstimationCount < 10)
         {
           return Optional.empty();
@@ -212,6 +262,36 @@ public class VisionUtils
       }
     }
     return target;
+
+  }
+
+  /**
+   * Vision simulation.
+   *
+   * @return Vision Simulation
+   */
+  public VisionSystemSim getVisionSim()
+  {
+    return visionSim;
+  }
+
+  /**
+   * Open up the photon vision camera streams on the localhost, assumes running photon vision on localhost.
+   */
+  private void openSimCameraViews()
+  {
+    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE))
+    {
+    //  try
+    //  {
+    //    Desktop.getDesktop().browse(new URI("http://localhost:1182/"));
+    //    Desktop.getDesktop().browse(new URI("http://localhost:1184/"));
+    //    Desktop.getDesktop().browse(new URI("http://localhost:1186/"));
+    //  } catch (IOException | URISyntaxException e)
+    //  {
+    //    e.printStackTrace();
+    //  }
+    }
   }
 
   /**
@@ -251,6 +331,24 @@ public class VisionUtils
    */
   enum Cameras
   {
+    /**
+     * Left Camera
+     */
+    LEFT_CAM("left",
+             new Rotation3d(0, Math.toRadians(-24.094), Math.toRadians(30)),
+             new Translation3d(Units.inchesToMeters(12.056),
+                               Units.inchesToMeters(10.981),
+                               Units.inchesToMeters(8.44)),
+             VecBuilder.fill(4, 4, 8), VecBuilder.fill(0.5, 0.5, 1)),
+    /**
+     * Right Camera
+     */
+    RIGHT_CAM("right",
+              new Rotation3d(0, Math.toRadians(-24.094), Math.toRadians(-30)),
+              new Translation3d(Units.inchesToMeters(12.056),
+                                Units.inchesToMeters(-10.981),
+                                Units.inchesToMeters(8.44)),
+              VecBuilder.fill(4, 4, 8), VecBuilder.fill(0.5, 0.5, 1)),
     /**
      * Center Camera
      */
@@ -294,6 +392,10 @@ public class VisionUtils
      */
     public        Optional<EstimatedRobotPose> estimatedRobotPose;
     /**
+     * Simulated camera instance which only exists during simulations.
+     */
+    public        PhotonCameraSim              cameraSim;
+    /**
      * Results list to be updated periodically and cached to avoid unnecessary queries.
      */
     public        List<PhotonPipelineResult>   resultsList       = new ArrayList<>();
@@ -329,6 +431,36 @@ public class VisionUtils
 
       this.singleTagStdDevs = singleTagStdDevs;
       this.multiTagStdDevs = multiTagStdDevsMatrix;
+
+      if (Robot.isSimulation())
+      {
+        SimCameraProperties cameraProp = new SimCameraProperties();
+        // A 640 x 480 camera with a 100 degree diagonal FOV.
+        cameraProp.setCalibration(960, 720, Rotation2d.fromDegrees(100));
+        // Approximate detection noise with average and standard deviation error in pixels.
+        cameraProp.setCalibError(0.25, 0.08);
+        // Set the camera image capture framerate (Note: this is limited by robot loop rate).
+        cameraProp.setFPS(30);
+        // The average and standard deviation in milliseconds of image data latency.
+        cameraProp.setAvgLatencyMs(35);
+        cameraProp.setLatencyStdDevMs(5);
+
+        cameraSim = new PhotonCameraSim(camera, cameraProp);
+        cameraSim.enableDrawWireframe(true);
+      }
+    }
+
+    /**
+     * Add camera to {@link VisionSystemSim} for simulated photon vision.
+     *
+     * @param systemSim {@link VisionSystemSim} to use.
+     */
+    public void addToVisionSim(VisionSystemSim systemSim)
+    {
+      if (Robot.isSimulation())
+      {
+        systemSim.addCamera(cameraSim, robotToCamTransform);
+      }
     }
 
     /**
@@ -396,7 +528,7 @@ public class VisionUtils
       if ((resultsList.isEmpty() || (currentTimestamp - mostRecentTimestamp >= debounceTime)) &&
           (currentTimestamp - lastReadTimestamp) >= debounceTime)
       {
-        resultsList = camera.getAllUnreadResults();
+        resultsList = Robot.isReal() ? camera.getAllUnreadResults() : cameraSim.getCamera().getAllUnreadResults();
         lastReadTimestamp = currentTimestamp;
         resultsList.sort((PhotonPipelineResult a, PhotonPipelineResult b) -> {
           return a.getTimestampSeconds() >= b.getTimestampSeconds() ? 1 : -1;

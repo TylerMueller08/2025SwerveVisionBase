@@ -14,6 +14,8 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Robot;
 import frc.robot.RobotContainer;
+import frc.robot.commands.auton.utils.AutonCommand;
+import frc.robot.commands.auton.utils.AutonUtils;
 
 public class ExampleAuton extends AutonCommand
 {
