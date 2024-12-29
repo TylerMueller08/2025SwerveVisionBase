@@ -1,2 +1,2 @@
-# 2025 Swerve/Vision Base Code for FRC Team 4593 Rapid Acceleration
-YAGSL, MK4N gear ratios, Kraken X60 motors, CANivore, and a poor attempt at sending PhotonVision's Multitag Localization data into swerve odometry
+# 2024 Version of MK4N Module Testing for FRC Team 4593 Rapid Acceleration
+YAGSL, MK4N L3 gear ratios, Kraken X60 motors, CANivore, Command Factory Autonomous, and PhotonVision localization.
