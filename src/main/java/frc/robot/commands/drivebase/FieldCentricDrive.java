@@ -16,9 +16,7 @@ import java.util.function.DoubleSupplier;
 import swervelib.SwerveController;
 import swervelib.math.SwerveMath;
 
-public class FieldCentricDrive extends Command
-{
-
+public class FieldCentricDrive extends Command {
   private final SwerveSubsystem swerve;
   private final DoubleSupplier  vX, vY;
   private final DoubleSupplier  headingAdjust;
@@ -45,9 +43,8 @@ public class FieldCentricDrive extends Command
    * @param lookRight     Face the robot right
    */
   public FieldCentricDrive(SwerveSubsystem swerve, DoubleSupplier vX, DoubleSupplier vY, DoubleSupplier headingAdjust,
-                          BooleanSupplier lookAway, BooleanSupplier lookTowards, BooleanSupplier lookLeft,
-                          BooleanSupplier lookRight)
-  {
+                           BooleanSupplier lookAway, BooleanSupplier lookTowards, BooleanSupplier lookLeft,
+                           BooleanSupplier lookRight) {
     this.swerve = swerve;
     this.vX = vX;
     this.vY = vY;
@@ -61,40 +58,32 @@ public class FieldCentricDrive extends Command
   }
 
   @Override
-  public void initialize()
-  {
+  public void initialize() {
     resetHeading = true;
   }
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
-  public void execute()
-  {
+  public void execute() {
     double headingX = 0;
     double headingY = 0;
 
-    if (lookAway.getAsBoolean())
-    {
+    if (lookAway.getAsBoolean()) {
       headingY = -1;
     }
-    if (lookRight.getAsBoolean())
-    {
+    if (lookRight.getAsBoolean()) {
       headingX = 1;
     }
-    if (lookLeft.getAsBoolean())
-    {
+    if (lookLeft.getAsBoolean()) {
       headingX = -1;
     }
-    if (lookTowards.getAsBoolean())
-    {
+    if (lookTowards.getAsBoolean()) {
       headingY = 1;
     }
 
     // Prevent Movement After Auto
-    if (resetHeading)
-    {
-      if (headingX == 0 && headingY == 0 && Math.abs(headingAdjust.getAsDouble()) == 0)
-      {
+    if (resetHeading) {
+      if (headingX == 0 && headingY == 0 && Math.abs(headingAdjust.getAsDouble()) == 0) {
         // Get the curret Heading
         Rotation2d currentHeading = swerve.getHeading();
 
@@ -115,12 +104,10 @@ public class FieldCentricDrive extends Command
                                            swerve.getSwerveDriveConfiguration());
 
     // Make the robot move
-    if (headingX == 0 && headingY == 0 && Math.abs(headingAdjust.getAsDouble()) > 0)
-    {
+    if (headingX == 0 && headingY == 0 && Math.abs(headingAdjust.getAsDouble()) > 0) {
       resetHeading = true;
       swerve.drive(translation, (Constants.OperatorConstants.TURN_CONSTANT * -headingAdjust.getAsDouble()), true);
-    } else
-    {
+    } else {
       swerve.drive(translation, desiredSpeeds.omegaRadiansPerSecond, true);
     }
   }
@@ -131,8 +118,7 @@ public class FieldCentricDrive extends Command
 
   // Returns true when the command should end.
   @Override
-  public boolean isFinished()
-  {
+  public boolean isFinished() {
     return false;
   }
 }

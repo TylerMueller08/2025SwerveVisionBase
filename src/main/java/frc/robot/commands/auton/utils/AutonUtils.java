@@ -14,21 +14,14 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.RobotContainer;
 
-public class AutonUtils
-{
-    /**
-     * Field length in meters
-     */
+public class AutonUtils {
+    /** Field length in meters. */
     private static final double FIELD_LENGTH = 16.54;
 
-    /**
-     * Robot Constraints for Pathfinding
-     */
+    /** Robot Constraints for Pathfinding. */
     public static final PathConstraints CONSTRAINTS = new PathConstraints(3.0, 4.0, Units.degreesToRadians(540), Units.degreesToRadians(720));
 
-    /**
-     * Robot Configuration for generating trajectories
-     */
+    /** Robot Configuration for generating trajectories. */
     public static RobotConfig robotConfig;
 
     static {
@@ -43,16 +36,14 @@ public class AutonUtils
         }
     }
     
-    public static Command resetOdometry(PathPlannerPath choreoPath)
-    {
+    public static Command resetOdometry(PathPlannerPath choreoPath) {
         return RobotContainer.drivebase.runOnce(
             () -> {
                 Pose2d pose = choreoPath
                     .generateTrajectory(new ChassisSpeeds(), new Rotation2d(Math.PI), robotConfig)
                     .getInitialPose();
 
-            if (RobotContainer.drivebase.isRedAlliance())
-            {
+            if (RobotContainer.drivebase.isRedAlliance()) {
                 pose = flipFieldPose(pose);
             }
 
@@ -65,8 +56,7 @@ public class AutonUtils
      * @param pathName Name of the path
      * @return PathPlanner Path
      */
-    public static PathPlannerPath loadPath(String pathName)
-    {
+    public static PathPlannerPath loadPath(String pathName) {
         try {
             return PathPlannerPath.fromPathFile(pathName);
         } catch (Exception e) {
@@ -84,8 +74,7 @@ public class AutonUtils
      * @param position The position to flip
      * @return The flipped position
      */
-    private static Translation2d flipFieldPosition(Translation2d position)
-    {
+    private static Translation2d flipFieldPosition(Translation2d position) {
         return new Translation2d(FIELD_LENGTH - position.getX(), position.getY());
     }
 
@@ -95,8 +84,7 @@ public class AutonUtils
      * @param rotation The rotation to flip
      * @return The flipped rotation
      */
-    private static Rotation2d flipFieldRotation(Rotation2d rotation)
-    {
+    private static Rotation2d flipFieldRotation(Rotation2d rotation) {
         return new Rotation2d(Math.PI).minus(rotation);
     }
     
@@ -106,8 +94,7 @@ public class AutonUtils
      * @param pose The pose to flip
      * @return The flipped pose
      */
-    private static Pose2d flipFieldPose(Pose2d pose)
-    {
+    private static Pose2d flipFieldPose(Pose2d pose) {
         return new Pose2d(flipFieldPosition(pose.getTranslation()), flipFieldRotation(pose.getRotation()));
     }
 }
