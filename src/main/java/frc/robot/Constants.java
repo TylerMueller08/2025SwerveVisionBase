@@ -28,8 +28,8 @@ public final class Constants {
   public static final class ModuleConfiguration {
     public static final double MOI = 6.883;
     public static final double WHEEL_COF = 1.19;
-    public static final double TRACK_WIDTH = 0.530225;
     public static final double WHEEL_RADIUS = Units.inchesToMeters(2);
+    public static final double TRACK_WIDTH = 0.530225;
   }
 
   public static final class RobotConfiguration {

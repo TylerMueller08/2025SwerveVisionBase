@@ -1,7 +1,11 @@
 package frc.robot.commands.auton.utils;
 
+import java.util.ArrayList;
+
 import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.path.GoalEndState;
+import com.pathplanner.lib.path.IdealStartingState;
 import com.pathplanner.lib.path.PathConstraints;
 import com.pathplanner.lib.path.PathPlannerPath;
 
@@ -61,8 +65,18 @@ public class AutonUtils {
             e.printStackTrace();
         }
 
-        // Return null or provide default fallback PathPlannerPath.
-        return null;
+        // Return an empty path as fallback.
+        return generateEmptyPath();
+    }
+
+    /** Result an empty path with zero constraints and no waypoints. */
+    private static PathPlannerPath generateEmptyPath() {
+        return new PathPlannerPath(
+            new ArrayList<>(),
+            new PathConstraints(0, 0, 0, 0),
+            new IdealStartingState(0, new Rotation2d()),
+            new GoalEndState(0, new Rotation2d())
+        );
     }
 
     /**

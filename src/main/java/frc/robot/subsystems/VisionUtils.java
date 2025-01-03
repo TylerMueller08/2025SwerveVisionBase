@@ -41,6 +41,7 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 import swervelib.SwerveDrive;
 import swervelib.telemetry.SwerveDriveTelemetry;
 
+/** Utility class for handling vision-related functions like Object Detection and AprilTag localization. */
 public class VisionUtils {
   /** AprilTag Field Layout of the year. */
   public static final AprilTagFieldLayout fieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2024Crescendo);
@@ -84,7 +85,7 @@ public class VisionUtils {
   /**
    * Calculates a target pose relative to an AprilTag on the field.
    * @param aprilTag    The ID of the AprilTag.
-   * @param robotOffset The offset {@link Transform2d} of the robot to apply to the pose for the robot to position
+   * @param robotOffset The offset {@link Transform2d} of the robot to apply to the pose for the robot to position.
    *                    itself correctly.
    * @return The target pose of the AprilTag.
    */
@@ -95,6 +96,41 @@ public class VisionUtils {
     } else {
       throw new RuntimeException("Cannot get AprilTag " + aprilTag + " from field " + fieldLayout.toString());
     }
+  }
+  
+  /**
+   * Calculates the target pose relative to a detected object (from the camera).
+   * @param robotPose The current global pose of the robot.
+   * @param robotToCameraOffset The offset {@link Transform2d} of the robot to apply to the pose for the robot to position.
+   * @return The target pose of the object detected by the camera.
+   */
+  public static Optional<Pose2d> getObjectPose(Pose2d robotPose, Transform2d robotToCameraOffset) {
+    Optional<PhotonPipelineResult> latestResultOptional = Cameras.OBJECT_DETECTION.getLatestResult();
+    
+    if (latestResultOptional.isPresent()) {
+      PhotonTrackedTarget bestTarget = latestResultOptional.get().getBestTarget();
+
+      if (bestTarget.getDetectedObjectConfidence() > 0.75) {
+        Transform3d cameraToTarget = bestTarget.getBestCameraToTarget();
+
+        // Translation and rotation of the object relative to the camera frame.
+        Translation3d translation = cameraToTarget.getTranslation();
+        Rotation2d rotation = cameraToTarget.getRotation().toRotation2d(); // 0, depending on shape.
+        Pose2d objectPoseInCamera = new Pose2d(translation.getX(), translation.getY(), rotation);
+
+        // Convert the object pose from camera frame to robot frame.
+        Pose2d objectPoseInRobot = objectPoseInCamera.transformBy(robotToCameraOffset.inverse());
+
+        // Transform from robot frame to global field coordinates.
+        Transform2d objectTransformFromRobot = new Transform2d(objectPoseInRobot.getTranslation(), objectPoseInRobot.getRotation());
+
+        // Return the object pose in global coordinates wrapped in an Optional.
+        return Optional.of(robotPose.transformBy(objectTransformFromRobot));
+      }
+    }
+    
+    // No object is detected or confidence is low, return an empty Optional.
+    return Optional.empty();
   }
 
   /**
@@ -264,24 +300,16 @@ public class VisionUtils {
 
   /** Camera Enum to select each camera. */
   enum Cameras {
-    /** Left Camera. */
-    LEFT_CAM("left",
-             new Rotation3d(0, Math.toRadians(-24.094), Math.toRadians(30)),
-             new Translation3d(Units.inchesToMeters(12.056),
-                               Units.inchesToMeters(10.981),
-                               Units.inchesToMeters(8.44)),
-             VecBuilder.fill(4, 4, 8), VecBuilder.fill(0.5, 0.5, 1)),
-
-    /** Right Camera. */
-    RIGHT_CAM("right",
-              new Rotation3d(0, Math.toRadians(-24.094), Math.toRadians(-30)),
-              new Translation3d(Units.inchesToMeters(12.056),
-                                Units.inchesToMeters(-10.981),
-                                Units.inchesToMeters(8.44)),
-              VecBuilder.fill(4, 4, 8), VecBuilder.fill(0.5, 0.5, 1)),
+    /** Center Camera. */
+    APRIL_TAG("OV9281",
+               new Rotation3d(0, Units.degreesToRadians(18), 0),
+               new Translation3d(Units.inchesToMeters(-4.628),
+                                 Units.inchesToMeters(-10.687),
+                                 Units.inchesToMeters(16.129)),
+               VecBuilder.fill(4, 4, 8), VecBuilder.fill(0.5, 0.5, 1)),
 
     /** Center Camera. */
-    CENTER_CAM("center",
+    OBJECT_DETECTION("PS4",
                new Rotation3d(0, Units.degreesToRadians(18), 0),
                new Translation3d(Units.inchesToMeters(-4.628),
                                  Units.inchesToMeters(-10.687),
