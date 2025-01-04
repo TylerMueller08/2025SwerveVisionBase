@@ -73,14 +73,18 @@ public class SwerveSubsystem extends SubsystemBase {
    * @param directory Directory of swerve drive config files.
    */
   public SwerveSubsystem(File directory) {
-    double angleConversionFactor = SwerveMath.calculateDegreesPerSteeringRotation(18.75);
-    double driveConversionFactor = SwerveMath.calculateMetersPerRotation(Units.inchesToMeters(4), 5.36);
+    // double angleConversionFactor = SwerveMath.calculateDegreesPerSteeringRotation(18.75);
+    // double driveConversionFactor = SwerveMath.calculateMetersPerRotation(Units.inchesToMeters(4), 5.36);
 
     // Configure the Telemetry before creating the SwerveDrive to avoid unnecessary objects being created.
     SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
 
     try {
-      swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED, angleConversionFactor, driveConversionFactor);
+      // swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED, angleConversionFactor, driveConversionFactor);
+      swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED,
+                                                                  new Pose2d(new Translation2d(Meter.of(1),
+                                                                                               Meter.of(4)),
+                                                                             Rotation2d.fromDegrees(0)));
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

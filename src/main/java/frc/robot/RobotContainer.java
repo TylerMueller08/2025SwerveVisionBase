@@ -62,6 +62,11 @@ public class RobotContainer {
                                                                                              driverController::getRightY)
                                                                                             .headingWhile(true);
 
+  Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
+
+  Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
+
+  Command driveSetpointGen = drivebase.driveWithSetpointGeneratorFieldRelative(driveDirectAngle);
 
   SwerveInputStream driveAngularVelocitySim = SwerveInputStream.of(drivebase.getSwerveDrive(),
                                                                   () -> -driverController.getLeftY(),
@@ -77,10 +82,9 @@ public class RobotContainer {
                                () -> Math.cos(driverController.getRawAxis(2) * Math.PI) * (Math.PI * 2))
     .headingWhile(true);
 
-  Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
   Command driveFieldOrientedDirectAngleSim = drivebase.driveFieldOriented(driveAngularVelocitySim);
-  Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
-  Command driveSetpointGen = drivebase.driveWithSetpointGeneratorFieldRelative(driveDirectAngle);
+
+  Command driveSetpointGenSim = drivebase.driveWithSetpointGeneratorFieldRelative(driveDirectAngleSim);
 
   public RobotContainer() {
     configureBindings();
