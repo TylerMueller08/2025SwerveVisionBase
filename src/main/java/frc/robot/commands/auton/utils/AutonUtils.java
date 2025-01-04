@@ -52,6 +52,10 @@ public class AutonUtils {
         });
     }
 
+    public static Command aimAtSpeaker() {
+        return RobotContainer.drivebase.aimAtSpeaker(1.0);
+    }
+
     /**
      * Load the PathPlanner trajectory file to path.
      * @param pathName Name of the path.

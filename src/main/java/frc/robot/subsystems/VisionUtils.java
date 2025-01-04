@@ -24,6 +24,7 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import frc.robot.Robot;
 import java.awt.Desktop;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -235,7 +236,7 @@ public class VisionUtils {
 
   /**
    * Get tracked target from a camera of AprilTagID.
-   * @param id     AprilTag ID.
+   * @param id AprilTag ID.
    * @param camera Camera to check.
    * @return Tracked target.
    */
@@ -261,18 +262,15 @@ public class VisionUtils {
     return visionSim;
   }
 
-  /** Open up the photon vision camera streams on the localhost, assumes running photon vision on localhost. */
+  /** Open up the PhotonVision camera streams on the localhost, assumes running PhotonVision on localhost. */
   private void openSimCameraViews() {
     if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-    //  try
-    //  {
-    //    Desktop.getDesktop().browse(new URI("http://localhost:1182/"));
-    //    Desktop.getDesktop().browse(new URI("http://localhost:1184/"));
-    //    Desktop.getDesktop().browse(new URI("http://localhost:1186/"));
-    //  } catch (IOException | URISyntaxException e)
-    //  {
-    //    e.printStackTrace();
-    //  }
+     try {
+       Desktop.getDesktop().browse(new URI("http://localhost:1182/"));
+       Desktop.getDesktop().browse(new URI("http://localhost:1184/"));
+     } catch (Exception e) {
+       e.printStackTrace();
+     }
     }
   }
 
@@ -300,19 +298,19 @@ public class VisionUtils {
 
   /** Camera Enum to select each camera. */
   enum Cameras {
-    /** Center Camera. */
+    /** AprilTag Camera. */
     APRIL_TAG("OV9281",
-               new Rotation3d(0, Units.degreesToRadians(18), 0),
-               new Translation3d(Units.inchesToMeters(-4.628),
-                                 Units.inchesToMeters(-10.687),
+               new Rotation3d(0, Units.degreesToRadians(0), 0),
+               new Translation3d(Units.inchesToMeters(12.0),
+                                 Units.inchesToMeters(0.0),
                                  Units.inchesToMeters(16.129)),
                VecBuilder.fill(4, 4, 8), VecBuilder.fill(0.5, 0.5, 1)),
 
-    /** Center Camera. */
+    /** Object Detection Camera. */
     OBJECT_DETECTION("PS4",
-               new Rotation3d(0, Units.degreesToRadians(18), 0),
-               new Translation3d(Units.inchesToMeters(-4.628),
-                                 Units.inchesToMeters(-10.687),
+               new Rotation3d(0, Units.degreesToRadians(30), Units.degreesToRadians(180)),
+               new Translation3d(Units.inchesToMeters(-12.0),
+                                 Units.inchesToMeters(0.0),
                                  Units.inchesToMeters(16.129)),
                VecBuilder.fill(4, 4, 8), VecBuilder.fill(0.5, 0.5, 1));
 
@@ -352,10 +350,10 @@ public class VisionUtils {
     /**
      * Construct a Photon Camera class with help. Standard deviations are fake values, experiment and determine
      * estimation noise on an actual robot.
-     * @param name                  Name of the PhotonVision camera found in the PV UI.
-     * @param robotToCamRotation    {@link Rotation3d} of the camera.
+     * @param name Name of the PhotonVision camera found in the PV UI.
+     * @param robotToCamRotation {@link Rotation3d} of the camera.
      * @param robotToCamTranslation {@link Translation3d} relative to the center of the robot.
-     * @param singleTagStdDevs      Single AprilTag standard deviations of estimated poses from the camera.
+     * @param singleTagStdDevs Single AprilTag standard deviations of estimated poses from the camera.
      * @param multiTagStdDevsMatrix Multi AprilTag standard deviations of estimated poses from the camera.
      */
     Cameras(String name, Rotation3d robotToCamRotation, Translation3d robotToCamTranslation, Matrix<N3, N1> singleTagStdDevs, Matrix<N3, N1> multiTagStdDevsMatrix) {
